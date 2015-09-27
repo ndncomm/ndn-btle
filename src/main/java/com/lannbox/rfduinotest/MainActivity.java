@@ -17,10 +17,30 @@ import android.view.inputmethod.EditorInfo;
 import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import java.io.IOException;
+import java.nio.ByteBuffer;
 
 import java.util.UUID;
+import net.named_data.jndn.encoding.ElementListener;
+import net.named_data.jndn.encoding.EncodingException;
 
 public class MainActivity extends Activity implements BluetoothAdapter.LeScanCallback {
+  public class BTLeForwarder {
+    /**
+     * Parse data as an Interest to get the address of the target Arduino,
+     * send the interest, wait for the fragments from the Arduino, reassemble
+     * the Data packet from the fragments, and call elementListener
+     * elementListener.onReceivedElement(data) with the bytes of the Data packet.
+     * @param buffer The buffer which should be an encoded Interest.
+     * @param elementListener This calls elementListener.onReceivedElement(data).
+     * @throws IOException
+     */
+    public void
+    sendAndReceive(ByteBuffer buffer, ElementListener elementListener) 
+      throws IOException
+    {
+    }
+  }
     // State machine
     final private static int STATE_BLUETOOTH_OFF = 1;
     final private static int STATE_DISCONNECTED = 2;
