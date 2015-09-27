@@ -95,7 +95,7 @@ public class BTLeForwarderTransport extends Transport {
   }
 
   /**
-   * Set data to the BTLeForwarder which sends to the host.
+   * Sent buffer to the BTLeForwarder which sends to the Arduino.
    * @param buffer The buffer of data to send.  This reads from position() to
    * limit(), but does not change the position.
    * @throws IOException For I/O error.
