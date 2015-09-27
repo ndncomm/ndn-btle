@@ -21,6 +21,9 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import java.util.UUID;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import net.named_data.jndn.Interest;
 import net.named_data.jndn.encoding.ElementListener;
 import net.named_data.jndn.encoding.EncodingException;
 
@@ -39,6 +42,37 @@ public class MainActivity extends Activity implements BluetoothAdapter.LeScanCal
     sendAndReceive(ByteBuffer buffer, ElementListener elementListener) 
       throws IOException
     {
+      final int tlvInterestType = 5;
+      if (buffer.get(0) != tlvInterestType)
+        throw new IOException
+          ("BTLeForwarder.sendAndReceive: Input buffer is not an Interest");
+
+      Interest interest = new Interest();
+      try {
+        interest.wireDecode(buffer);
+      } catch (EncodingException ex) {
+        throw new IOException
+          ("BTLeForwarder.sendAndReceive: Error decoding the input buffer as an Interest: " +
+           ex.getMessage());
+      }
+
+      ByteBuffer arduinoId = interest.getName().get(0).getValue().buf();
+
+      // TODO: Use arduinoId to find the FIB entry for the Arduino.
+      // TODO: Send the input buffer to the Arduino and receive fragments.
+
+      ByteBuffer receiveBuffer = null;
+
+      try {
+        // TODO: Re-assemble the fragments into the receiveBuffer, which we assume
+        // is a Data packet from the Arduino.
+
+        elementListener.onReceivedElement(receiveBuffer);
+      } catch (EncodingException ex) {
+        throw new IOException
+          ("BTLeForwarder.sendAndReceive: Error in onReceivedElement: " +
+           ex.getMessage());
+      }
     }
   }
     // State machine
