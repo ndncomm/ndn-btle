@@ -204,7 +204,7 @@ replyToInterest(const uint8_t *element, size_t elementLength)
   int curSize = 0;
 
   while(curSize < endSize){
-     memcpy(sendBuf, &encoding[curSize], 20);
+     memcpy(sendBuf, encoding+curSize, 20);
      RFduinoBLE.send(sendBuf, 20);
      curSize += 20;
   }
