@@ -115,12 +115,10 @@ void RFduinoBLE_onReceive(char *data, int len)
   if (sizeof(data) > 0) {
          digitalWrite(green_led, 255);
     }
-  RFduinoBLE.send("test", 4);  
+  //RFduinoBLE.send("test", 4);  
   digitalWrite(green_led, 123);
   digitalWrite(blue_led, 255);
-
-
-  
+  replyToInterest((const uint8_t *)data, (size_t)len);
   
 
 }
@@ -199,17 +197,38 @@ replyToInterest(const uint8_t *element, size_t elementLength)
   output, &encodingLength)))
     return error;
 
-  char sendBuf[20] = {0};
-  int endSize = sizeof(encoding);
-  int curSize = 0;
+  unsigned char sendBuf[20] = {0};
+  unsigned int curSize = 0;
+  unsigned int numPackets  = 0;
+  unsigned int curIndex = 0;
+  if (encodingLength%18 != 0)
+  {
+    numPackets = encodingLength%18 + 1; 
+  }
+  else{
+    numPackets = encodingLength%18;
+  }
 
-  while(curSize < endSize){
-     memcpy(sendBuf, encoding+curSize, 20);
-     RFduinoBLE.send(sendBuf, 20);
-     curSize += 20;
+
+  while(curSize < encodingLength){
+     sendBuf[0] = (unsigned char)curIndex;
+     sendBuf[1] = (unsigned char)numPackets;
+     if (encodingLength-curSize < 18){
+       memcpy(sendBuf+2, encoding+curSize, encodingLength-curSize);
+       RFduinoBLE.send((const char *)sendBuf, encodingLength-curSize+2);
+       curSize += encodingLength-curSize;
+     }
+     else{
+       memcpy(sendBuf+2, encoding+curSize, 18);
+       RFduinoBLE.send((const char *)sendBuf,20);
+        curSize += 18;
+     }
+     
+     
+     curIndex++;
   }
   
-//  transport.send(encoding, encodingLength);
+
   Serial.println("Data size");
   Serial.println((char *)encoding);
   Serial.println(sizeof(encoding));
