@@ -111,16 +111,14 @@ void RFduinoBLE_onReceive(char *data, int len)
   digitalWrite(blue_led, 0);
 
   Serial.print("Recived data from remote device");
-  Serial.println(data); 
-  if (sizeof(data) > 0) {
-         digitalWrite(green_led, 255);
-    }
+ 
   //RFduinoBLE.send("test", 4);  
   digitalWrite(green_led, 123);
-  digitalWrite(blue_led, 255);
-  replyToInterest((const uint8_t *)data, (size_t)len);
-  
-
+  char testData[] = {0x05, 0x12, 0x07, 0x0a, 0x08, 0x03, 0x61, 0x62, 0x63, 0x08, 0x03, 0x31, 0x32, 0x33, 0x0a, 0x04, 0xf0, 0x2f, 0x11, 0xf4};
+  int error = replyToInterest((const uint8_t *)testData, (size_t)sizeof(testData));
+  Serial.print("Error: ");
+  Serial.println(error);
+ 
 }
 
 
@@ -143,6 +141,7 @@ void RFduinoBLE_onAdvertisement(bool start)
 static ndn_Error
 replyToInterest(const uint8_t *element, size_t elementLength)
 {
+  Serial.println("In reply");
   // Decode the element as an InterestLite.
   ndn_NameComponent interestNameComponents[3];
   struct ndn_ExcludeEntry excludeEntries[2];
@@ -156,25 +155,29 @@ replyToInterest(const uint8_t *element, size_t elementLength)
         &signedPortionEndOffset)))
     return error;
   
-  // We expect the interest name to be "/testarduino/voltage/<reading number>". 
+  // We expect the interest name to be "/mac/reading_number". 
   // Check the size here. We construct the data name below and if it doesn't 
   // match the interest prefix, then the forwarder will drop it.
-  if (interest.getName().size() != 3)
+  if (interest.getName().size() != 2)
     // Ignore an unexpected prefix.
     return NDN_ERROR_success;
 
  
   // Create the response data packet.
-  ndn_NameComponent dataNameComponents[3];
+  ndn_NameComponent dataNameComponents[2];
   DataLite data(dataNameComponents, sizeof(dataNameComponents) / sizeof(dataNameComponents[0]), 0, 0);  
   //data.getName().append(interest.getName());
+  data.getName().append(interest.getName().get(0));
+  data.getName().append(interest.getName().get(1));
 
   // Set the content to an analog reading.
   float reading = RFduino_temperature(FAHRENHEIT);
-  char contentBuffer[12] = {0};
+  char contentBuffer[12];
   Serial.println(reading); 
-  sprintf(contentBuffer, "%f", reading);
+  sprintf(contentBuffer, "%d", (int)reading);
   data.setContent(BlobLite((const uint8_t*)contentBuffer, strlen(contentBuffer)));
+  Serial.println(contentBuffer);
+  Serial.println(strlen(contentBuffer));
   
   // Set up the signature with the hmacKeyDigest key locator digest.
   // TODO: Change to ndn_SignatureType_HmacWithSha256Signature when
@@ -197,29 +200,50 @@ replyToInterest(const uint8_t *element, size_t elementLength)
   output, &encodingLength)))
     return error;
 
+       char temp[10];
+       for (int i = 0; i < encodingLength ; ++i) {
+         sprintf(temp, "%02x ", (int)encoding[i]);
+         Serial.print(temp);
+       }    
+  Serial.println("");
   unsigned char sendBuf[20] = {0};
   unsigned int curSize = 0;
   unsigned int numPackets  = 0;
   unsigned int curIndex = 0;
+  Serial.println(encodingLength);
   if (encodingLength%18 != 0)
   {
-    numPackets = encodingLength%18 + 1; 
+    numPackets = encodingLength/18 + 1; 
   }
   else{
-    numPackets = encodingLength%18;
+    numPackets = encodingLength/18;
   }
 
 
   while(curSize < encodingLength){
      sendBuf[0] = (unsigned char)curIndex;
      sendBuf[1] = (unsigned char)numPackets;
+     Serial.println(encodingLength-curSize);
      if (encodingLength-curSize < 18){
+      Serial.println(encodingLength-curSize);
        memcpy(sendBuf+2, encoding+curSize, encodingLength-curSize);
        RFduinoBLE.send((const char *)sendBuf, encodingLength-curSize+2);
+       char temp[10];
+       for (int i = 0; i < encodingLength-curSize +2 ; ++i) {
+         sprintf(temp, "%02x ", (int)sendBuf[i]);
+         Serial.print(temp);
+       }
+       Serial.println("");
        curSize += encodingLength-curSize;
      }
      else{
        memcpy(sendBuf+2, encoding+curSize, 18);
+       char temp[10];
+       for (int i = 0; i < 20 ; ++i) {
+         sprintf(temp, "%02x ", (int)sendBuf[i]);
+         Serial.print(temp);
+       }
+       Serial.println("");
        RFduinoBLE.send((const char *)sendBuf,20);
         curSize += 18;
      }
@@ -228,7 +252,7 @@ replyToInterest(const uint8_t *element, size_t elementLength)
      curIndex++;
   }
   
-
+   
   Serial.println("Data size");
   Serial.println((char *)encoding);
   Serial.println(sizeof(encoding));
