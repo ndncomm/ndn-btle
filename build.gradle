@@ -1,0 +1,32 @@
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'com.android.tools.build:gradle:1.2.3'
+    }
+}
+apply plugin: 'android'
+
+repositories {
+    mavenCentral()
+}
+
+android {
+    compileSdkVersion 19
+    buildToolsVersion "19.1.0"
+
+    defaultConfig {
+        minSdkVersion 19
+        targetSdkVersion 19
+    }
+
+    dexOptions {
+        javaMaxHeapSize "2g"
+    }
+}
+
+dependencies {
+    compile 'net.named-data:jndn:0.8'
+    compile 'com.google.guava:guava:19.0-rc2'
+}
